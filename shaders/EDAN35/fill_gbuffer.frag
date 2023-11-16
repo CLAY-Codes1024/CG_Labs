@@ -38,5 +38,6 @@ void main()
 		geometry_specular = texture(specular_texture, fs_in.texcoord);
 
 	// Worldspace normal
-	geometry_normal.xyz = vec3(0.0);
+	// geometry_normal.xyz = vec3(0.0);
+	geometry_normal.xyz = 0.5 * (mat3(normal_model_to_world) * fs_in.normal) + 0.5;
 }
