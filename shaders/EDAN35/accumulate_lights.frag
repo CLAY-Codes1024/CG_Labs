@@ -1,4 +1,5 @@
 #version 410
+const float shadowMapOffset = 0.000001;
 
 struct ViewProjTransforms
 {
@@ -44,36 +45,42 @@ void main()
 {
 	vec2 uv = gl_FragCoord.xy * inverse_screen_resolution;
 
+	// two ways to calculate pixel postion in wrold space
 	vec3 pixelPosNDC;
 	pixelPosNDC.xy = 2.0 * uv - 1.0;
 	pixelPosNDC.z = 2.0 * texture(depth_texture, uv).r - 1.0;
-	vec4 pixelPosCS = vec4(pixelPosNDC, 1.0);
-	pixelPosCS = pixelPosCS / gl_FragCoord.w;
+	vec4 pixelPosCS = vec4(pixelPosNDC, 1.0) / gl_FragCoord.w;
 	// wrong: vec3 pixelPosWS = mat3(camera.view_projection_inverse) * pixelPosCS;
 	// you can't remove the translation of the view_projection_inverse, you have to keep the
 	// homogeneous coordinate
 	vec3 pixelPosWS = vec3(camera.view_projection_inverse * pixelPosCS);
 
+	// or I can do
+	vec4 pixelPosCS2 = vec4(pixelPosNDC, 1.0f);
+	vec4 almostPosWS = camera.view_projection_inverse * pixelPosCS2;
+	vec3 pixelPosWS2 = almostPosWS.xyz / almostPosWS.w;
+
 	// info for light calculation
-	vec3 viewDir = normalize(camera_position - pixelPosWS);
+	vec3 viewDir = normalize(camera_position - pixelPosWS2);
 	vec3 normal = normalize(2.0 * texture(normal_texture, uv).xyz - 1.0);
-	vec2 dsContri = calSpotLightCoefficient(pixelPosWS, viewDir, normal);
+	vec2 dsContri = calSpotLightCoefficient(pixelPosWS2, viewDir, normal);
 
 	// shadow
 	// clip space
-	vec4 pixelPosSM = lights[light_index].view_projection * vec4(pixelPosWS, 1.0);
+	// wrong: vec4 pixelPosSM = lights[light_index].view_projection * vec4(pixelPosWS, 1.0);
+	vec4 pixelPosSM = lights[light_index].view_projection * camera.view_projection_inverse * pixelPosCS;
 	// ndc space
 	vec3 projCoord = pixelPosSM.xyz / pixelPosSM.w;
 	// range in [-1,1], need to remap tp [0,1]
 	projCoord = projCoord * 0.5 + 0.5;
 	// read depth value from shadow map, that is range from [0,1]
 	vec2 shadowmap_texel_size = 1.0f / textureSize(shadow_texture, 0);
-	float closetDepth = texture(shadow_texture, projCoord.xy).r;
+	float closetDepth = texture(shadow_texture, projCoord.xy).r + shadowMapOffset;
 	// it seems like every projCoord.z is greater than z value that I read from the shadow map
 	float shadow = projCoord.z > closetDepth ? 1.0 : 0.0;
 
-	light_diffuse_contribution  = vec4(vec3(dsContri.x), shadow);
-	light_specular_contribution = vec4(vec3(dsContri.y), shadow);
+	light_diffuse_contribution  = vec4(vec3(dsContri.x) * (1.0 - shadow) * light_color, 1.0);
+	light_specular_contribution = vec4(vec3(dsContri.y) * (1.0 - shadow) * light_color, 1.0);
 
 	//vec3 diffuseContri = dsContri.x * light_intensity * light_color;
 	//vec3 specContri = dsContri.y * light_intensity * light_color;
