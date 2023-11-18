@@ -1,5 +1,7 @@
 #version 410
-const float shadowMapOffset = 0.000001;
+const float shadowMapOffset = 0.00001;
+const int pcfCount = 2;
+const float totalTexel = (pcfCount * 2 + 1) * (pcfCount * 2 + 1);
 
 struct ViewProjTransforms
 {
@@ -74,13 +76,35 @@ void main()
 	// range in [-1,1], need to remap tp [0,1]
 	projCoord = projCoord * 0.5 + 0.5;
 	// read depth value from shadow map, that is range from [0,1]
-	vec2 shadowmap_texel_size = 1.0f / textureSize(shadow_texture, 0);
-	float closetDepth = texture(shadow_texture, projCoord.xy).r + shadowMapOffset;
-	// it seems like every projCoord.z is greater than z value that I read from the shadow map
-	float shadow = projCoord.z > closetDepth ? 1.0 : 0.0;
 
-	light_diffuse_contribution  = vec4(vec3(dsContri.x) * (1.0 - shadow) * light_color, 1.0);
-	light_specular_contribution = vec4(vec3(dsContri.y) * (1.0 - shadow) * light_color, 1.0);
+	// pcf - percentage closer filtering
+	float total = 0.0;
+	vec2 shadowmap_texel_size = 1.0f / textureSize(shadow_texture, 0); // this is for pcf
+	// sampler the pixel around the center pixel
+	for(int xOffset=-pcfCount; xOffset<pcfCount; xOffset++)
+	{
+		for(int yOffset=-pcfCount; yOffset<pcfCount; yOffset++)
+		{
+			// sampler the shadow map
+			float closestDepth = texture(shadow_texture, projCoord.xy + vec2(xOffset, yOffset) * shadowmap_texel_size).r + shadowMapOffset;
+			// determing it's in shadow or not
+			float shadow = projCoord.z > closestDepth ? 1.0 : 0.0;
+			total += (1.0 - shadow);
+		}
+	}
+	// average the shadow value;
+	float pcfShadow = total / totalTexel;
+	light_diffuse_contribution  = vec4(vec3(dsContri.x) * pcfShadow * light_color, 1.0);
+	light_specular_contribution = vec4(vec3(dsContri.y) * pcfShadow * light_color, 1.0);
+
+	// normal way to sampler shadow, hard edge
+	//float closestDepth = texture(shadow_texture, projCoord.xy).r + shadowMapOffset;
+	// it seems like every projCoord.z is greater than z value that I read from the shadow map
+	// cause I got wrong pixel position in shadow map
+	//float shadow = projCoord.z > closestDepth ? 1.0 : 0.0;
+
+	//light_diffuse_contribution  = vec4(vec3(dsContri.x) * (1.0 - shadow) * light_color, 1.0);
+	//light_specular_contribution = vec4(vec3(dsContri.y) * (1.0 - shadow) * light_color, 1.0);
 
 	//vec3 diffuseContri = dsContri.x * light_intensity * light_color;
 	//vec3 specContri = dsContri.y * light_intensity * light_color;
