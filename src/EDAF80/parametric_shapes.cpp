@@ -122,14 +122,65 @@ parametric_shapes::createQuad(float const width, float const height,
 	return data;
 }
 
+// longitude: describe west and east
+// latitude: describe north and south
 bonobo::mesh_data
 parametric_shapes::createSphere(float const radius,
                                 unsigned int const longitude_split_count,
                                 unsigned int const latitude_split_count)
 {
+	// compute the how many vertices do we need from the longitude and latitude
+	// maybe we can use unordered_set to store the vertices
 
-	//! \todo Implement this function
-	return bonobo::mesh_data();
+	// idealy the vertices number should be latitude vertices number * longitude vertices number + 2
+	const auto latitude_edge_count = latitude_split_count + 1u;
+	const auto longitude_edge_count = longitude_split_count + 1u;
+	const auto latitude_vertices_nb = latitude_split_count;
+	const auto longitude_vertices_nb = longitude_edge_count + 1u;
+	const auto vertices_nb =  latitude_vertices_nb * longitude_vertices_nb + 2u;
+
+
+	// the method that the standard solution used
+	const auto latitude_edge_count = latitude_split_count + 1u;
+	const auto longitude_edge_count = longitude_split_count + 1u;
+	const auto latitude_vertices_nb = latitude_edge_count + 1u;
+	const auto longitude_vertices_nb = longitude_edge_count + 1u;
+	const auto vertices_nb = latitude_vertices_nb * longitude_vertices_nb;
+
+	// it's hard to understand why +1 here, but you can understand by the following set up
+	const auto latitude_edge_count = latitude_split_count + 1u;
+	const auto longitude_edge_count = longitude_split_count + 1u;
+	const auto latitude_vertices_nb = latitude_split_count + 2u; // we take the top and the bottom vertices as a part of latitude every time
+	const auto longitude_vertices_nb = longitude_edge_count + 1u;
+	const auto vertices_nb = latitude_vertices_nb * longitude_vertices_nb;
+
+
+	// construct the properties of the vertices
+	auto vertices_pos = std::vector<glm::vec3>(vertices_nb);
+
+	// compute the theta and phi
+	const auto d_theta = glm::two_pi<float>() / static_cast<float>(longitude_edge_count);
+	const auto d_phi = glm::pi<float>() / static_cast<float>(latitude_edge_count);
+
+	bonobo::mesh_data data;
+
+	// generate necessary varibles
+	glGenVertexArrays(1, &data.vao);
+	glGenBuffers(1, &data.bo);
+	glGenBuffers(1, &data.ibo);
+
+	/* bind all the buffers */
+	// 1. bind the vertex array
+	glBindVertexArray(data.vao);
+	// 2. vertices array buffer
+	glBindBuffer(GL_ARRAY_BUFFER, data.bo);
+	// compute the position of the vertices
+	// we start at the top vertex of the sphere
+	for (unsigned int i = 0; i < latitude_vertices_nb; i++) {
+
+	}
+
+	return data;
 }
 
 bonobo::mesh_data
