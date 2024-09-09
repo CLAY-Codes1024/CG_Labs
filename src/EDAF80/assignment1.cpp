@@ -12,6 +12,8 @@
 #include <clocale>
 #include <cstdlib>
 
+#include <stack>
+
 
 int main()
 {
@@ -31,7 +33,7 @@ int main()
 	FPSCameraf camera(0.5f * glm::half_pi<float>(),
 	                  static_cast<float>(config::resolution_x) / static_cast<float>(config::resolution_y),
 	                  0.01f, 1000.0f);
-	camera.mWorld.SetTranslate(glm::vec3(0.0f, 0.0f, 6.0f));
+	camera.mWorld.SetTranslate(glm::vec3(0.0f, 4.0f, 20.0f));
 	camera.mWorld.LookAt(glm::vec3(0.0f));
 	camera.mMouseSensitivity = glm::vec2(0.003f);
 	camera.mMovementSpeed = glm::vec3(3.0f); // 3 m/s => 10.8 km/h
@@ -249,8 +251,27 @@ int main()
 		// TODO: Replace this explicit rendering of the Earth and Moon
 		// with a traversal of the scene graph and rendering of all its
 		// nodes.
-		earth.render(animation_delta_time_us, camera.GetWorldToClipMatrix(), glm::translate(glm::mat4(1.0f), glm::vec3(2.0f, 0.0f, 0.0f)), show_basis);
-		//moon.render(animation_delta_time_us, camera.GetWorldToClipMatrix(), glm::mat4(1.0f), show_basis);
+		std::stack<CelestialBodyRef> scene;
+		scene.push({&earth, glm::mat4(1.0f)});
+
+		while (!scene.empty()) {
+			// get the top data
+			const auto& curNode = scene.top();
+			const auto& parent_transform = curNode.parent_transform;
+			const auto& children = curNode.body->get_children();
+			// delete the top data
+			scene.pop();
+
+			// render the cur body and get the child_transform
+			const auto child_transform = curNode.body->render(animation_delta_time_us, camera.GetWorldToClipMatrix(), parent_transform, show_basis);
+
+			// push the child to the stack
+			if (children.size() != 0) {
+				for (const auto& child : children) {
+					scene.push({ child, child_transform });
+				}
+			}
+		}
 
 
 		//
