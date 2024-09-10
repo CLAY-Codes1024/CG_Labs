@@ -226,7 +226,10 @@ edaf80::Assignment2::run()
 			// set the moving object to the first control point
 			//circle_rings.get_transform().SetTranslate(control_point_locations[0]);
 			float x = elapsed_time_s - std::floor(elapsed_time_s);
-			int index = static_cast<unsigned int>(elapsed_time_s) % (control_point_locations.size() - 1);
+			int index = static_cast<unsigned int>(elapsed_time_s) % control_point_locations.size();
+
+			// speed = dis / time
+			// given a constan speed, calculate the distance that move forward every frame
 
 			if (use_linear) {
 				//! \todo Compute the interpolated position
@@ -235,7 +238,7 @@ edaf80::Assignment2::run()
 				// 注意这个函数已经在render loop中了，不用再写循环了
 				const auto interpolated_pos = interpolation::evalLERP(
 					control_point_locations[index],
-					control_point_locations[index+1],
+					control_point_locations[(index+1) % control_point_locations.size()],
 					x
 				);
 				circle_rings.get_transform().SetTranslate(interpolated_pos);
@@ -246,6 +249,16 @@ edaf80::Assignment2::run()
 				//!       using the Catmull-Rom interpolation;
 				//!       use the `catmull_rom_tension`
 				//!       variable as your tension argument.
+				std::cout << ((index - 1) < 0 ? control_point_locations.size() - 1 : index - 1) << std::endl;
+				const auto interpolated_pos = interpolation::evalCatmullRom(
+					control_point_locations[(index-1)<0 ? control_point_locations.size() - 1 : index-1],
+					control_point_locations[index],
+					control_point_locations[(index+1) % control_point_locations.size()],
+					control_point_locations[(index+2) % control_point_locations.size()],
+					catmull_rom_tension,
+					x
+				);
+				circle_rings.get_transform().SetTranslate(interpolated_pos);
 			}
 		}
 
