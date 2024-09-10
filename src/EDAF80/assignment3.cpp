@@ -212,10 +212,13 @@ edaf80::Assignment3::run()
 				changeCullMode(cull_mode);
 			}
 			bonobo::uiSelectPolygonMode("Polygon mode", polygon_mode);
+
+			// make the shader selectable in gui
 			auto demo_sphere_selection_result = program_manager.SelectProgram("Demo sphere", demo_sphere_program_index);
 			if (demo_sphere_selection_result.was_selection_changed) {
 				demo_sphere.set_program(demo_sphere_selection_result.program, phong_set_uniforms);
 			}
+
 			ImGui::Separator();
 			ImGui::Checkbox("Use normal mapping", &use_normal_mapping);
 			ImGui::ColorEdit3("Ambient", glm::value_ptr(demo_material.ambient));

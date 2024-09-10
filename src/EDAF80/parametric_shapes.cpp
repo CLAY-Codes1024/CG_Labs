@@ -145,6 +145,32 @@ parametric_shapes::createSphere(float const radius,
 	auto vertices_tangent = std::vector<glm::vec3>(vertices_nb);
 	auto vertices_binormal = std::vector<glm::vec3>(vertices_nb);
 	auto vertices_texCoord = std::vector<glm::vec3>(vertices_nb);
+
+	// compute the offset and size of each properties for set up the vertex array attributes
+	// 1. position
+	const auto vertices_pos_offset = 0;
+	const auto vertices_pos_size = vertices_pos.size() * sizeof(glm::vec3);
+	// 2. normal
+	const auto vertices_normal_offset = vertices_pos_size;
+	const auto vertices_normal_size = vertices_normal.size() * sizeof(glm::vec3);
+	// 3. tangent
+	const auto vertices_tangent_offset = vertices_normal_offset + vertices_normal_size;
+	const auto vertices_tangent_size = vertices_tangent.size() * sizeof(glm::vec3);
+	// 4. binormal
+	const auto vertices_binormal_offset = vertices_tangent_offset + vertices_tangent_size;
+	const auto vertices_binormal_size = vertices_binormal.size() * sizeof(glm::vec3);
+	// 5. texture coordinates
+	const auto vertices_texCoord_offset = vertices_binormal_offset + vertices_binormal_size;
+	const auto vertices_texCoord_size = vertices_texCoord.size() * sizeof(glm::vec3);
+	// 6. size in total
+	const auto vbo_size =
+		vertices_pos_size +
+		vertices_normal_size +
+		vertices_tangent_size +
+		vertices_binormal_size +
+		vertices_texCoord_size;
+
+
 	// need to be unsigned int, otherwise the indices can not pass to the gpu correctly
 	auto indices = std::vector<glm::uvec3>(2 * (latitude_vertices_nb-1) * (longitude_vertices_nb-1));
 
@@ -174,23 +200,28 @@ parametric_shapes::createSphere(float const radius,
 
 			// tangent
 			vertices_tangent[index] = glm::vec3(
-
+				cos_theta,
+				0,
+				-sin_theta
 			);
 
 			// binormal
 			vertices_binormal[index] = glm::vec3(
-
+				sin_theta * cos_phi,
+				1,
+				cos_theta * cos_phi
 			);
 
 			// normal
-			vertices_normal[index] = glm::cross(vertices_tangent[index], vertices_binormal[index]);
+			//vertices_normal[index] = glm::cross(vertices_tangent[index], vertices_binormal[index]);
+			// dont forget to normalized
+			vertices_normal[index] = glm::normalize(glm::cross(vertices_tangent[index], vertices_binormal[index]));
 
 			// texture coordinates
 			vertices_texCoord[index] = glm::vec3(
-				static_cast<float>(j) / static_cast<float>(vertices_nb),
-				static_cast<float>(i) / static_cast<float>(vertices_nb),
+				static_cast<float>(j) / static_cast<float>(longitude_vertices_nb),
+				static_cast<float>(i) / static_cast<float>(latitude_vertices_nb),
 				.0f
-
 			);
 
 			theta += d_theta;
@@ -199,9 +230,6 @@ parametric_shapes::createSphere(float const radius,
 
 		phi += d_phi;
 	}
-
-	index;
-	vertices_pos;
 
 	// compute the indices
 	index = 0u;
@@ -243,9 +271,31 @@ parametric_shapes::createSphere(float const radius,
 	glGenBuffers(1, &data.bo);
 	assert(data.bo != 0u);
 	glBindBuffer(GL_ARRAY_BUFFER, data.bo);
-	glBufferData(GL_ARRAY_BUFFER, vertices_pos.size() * sizeof(glm::vec3), vertices_pos.data(), GL_STATIC_DRAW);
+	// pre-allocated the memory
+	glBufferData(GL_ARRAY_BUFFER, vbo_size, nullptr, GL_STATIC_DRAW);
+
+	// specify the attributes in the memory
+	glBufferSubData(GL_ARRAY_BUFFER, vertices_pos_offset, vertices_pos_size, vertices_pos.data());
 	glEnableVertexAttribArray(static_cast<unsigned int>(bonobo::shader_bindings::vertices));
 	glVertexAttribPointer(static_cast<unsigned int>(bonobo::shader_bindings::vertices), 3, GL_FLOAT, GL_FALSE, 0, reinterpret_cast<GLvoid const*>(0x0));
+
+	glBufferSubData(GL_ARRAY_BUFFER, vertices_normal_offset, vertices_normal_size, static_cast<GLvoid const*>(vertices_normal.data()));
+	glEnableVertexAttribArray(static_cast<unsigned int>(bonobo::shader_bindings::normals));
+	// dont forget to specify the correct offset
+	glVertexAttribPointer(static_cast<unsigned int>(bonobo::shader_bindings::normals), 3, GL_FLOAT, GL_FALSE, 0, reinterpret_cast<GLvoid const*>(vertices_normal_offset));
+
+	glBufferSubData(GL_ARRAY_BUFFER, vertices_texCoord_offset, vertices_texCoord_size, static_cast<GLvoid const*>(vertices_texCoord.data()));
+	glEnableVertexAttribArray(static_cast<unsigned int>(bonobo::shader_bindings::texcoords));
+	glVertexAttribPointer(static_cast<unsigned int>(bonobo::shader_bindings::texcoords), 3, GL_FLOAT, GL_FALSE, 0, reinterpret_cast<GLvoid const*>(vertices_texCoord_offset));
+
+	glBufferSubData(GL_ARRAY_BUFFER, vertices_tangent_offset, vertices_tangent_size, static_cast<GLvoid const*>(vertices_tangent.data()));
+	glEnableVertexAttribArray(static_cast<unsigned int>(bonobo::shader_bindings::tangents));
+	glVertexAttribPointer(static_cast<unsigned int>(bonobo::shader_bindings::tangents), 3, GL_FLOAT, GL_FALSE, 0, reinterpret_cast<GLvoid const*>(vertices_tangent_offset));
+
+	glBufferSubData(GL_ARRAY_BUFFER, vertices_binormal_offset, vertices_binormal_size, static_cast<GLvoid const*>(vertices_binormal.data()));
+	glEnableVertexAttribArray(static_cast<unsigned int>(bonobo::shader_bindings::binormals));
+	glVertexAttribPointer(static_cast<unsigned int>(bonobo::shader_bindings::binormals), 3, GL_FLOAT, GL_FALSE, 0, reinterpret_cast<GLvoid const*>(vertices_binormal_offset));
+
 
 	glBindBuffer(GL_ARRAY_BUFFER, 0u);
 
