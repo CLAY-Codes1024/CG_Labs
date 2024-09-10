@@ -132,21 +132,6 @@ parametric_shapes::createSphere(float const radius,
 	// compute the how many vertices do we need from the longitude and latitude
 	// maybe we can use unordered_set to store the vertices
 
-	// idealy the vertices number should be latitude vertices number * longitude vertices number + 2
-	const auto latitude_edge_count = latitude_split_count + 1u;
-	const auto longitude_edge_count = longitude_split_count + 1u;
-	const auto latitude_vertices_nb = latitude_split_count;
-	const auto longitude_vertices_nb = longitude_edge_count + 1u;
-	const auto vertices_nb =  latitude_vertices_nb * longitude_vertices_nb + 2u;
-
-
-	// the method that the standard solution used
-	const auto latitude_edge_count = latitude_split_count + 1u;
-	const auto longitude_edge_count = longitude_split_count + 1u;
-	const auto latitude_vertices_nb = latitude_edge_count + 1u;
-	const auto longitude_vertices_nb = longitude_edge_count + 1u;
-	const auto vertices_nb = latitude_vertices_nb * longitude_vertices_nb;
-
 	// it's hard to understand why +1 here, but you can understand by the following set up
 	const auto latitude_edge_count = latitude_split_count + 1u;
 	const auto longitude_edge_count = longitude_split_count + 1u;
@@ -154,31 +139,101 @@ parametric_shapes::createSphere(float const radius,
 	const auto longitude_vertices_nb = longitude_edge_count + 1u;
 	const auto vertices_nb = latitude_vertices_nb * longitude_vertices_nb;
 
-
 	// construct the properties of the vertices
 	auto vertices_pos = std::vector<glm::vec3>(vertices_nb);
+	auto indices = std::vector<glm::vec3>(2 * (latitude_vertices_nb-1) * (longitude_vertices_nb-1));
 
 	// compute the theta and phi
 	const auto d_theta = glm::two_pi<float>() / static_cast<float>(longitude_edge_count);
 	const auto d_phi = glm::pi<float>() / static_cast<float>(latitude_edge_count);
 
+	// compute the position of the vertices
+	// we start at the top vertex of the sphere
+	float phi = 0.0f;
+	int index = 0;
+	for (unsigned int i = 0; i < latitude_vertices_nb; i++) {
+		const float cos_phi = std::cos(phi);
+		const float sin_phi = std::sin(phi);
+
+		float theta = 0.0f;
+		for (unsigned int j = 0; j < longitude_vertices_nb; j++) {
+			const float cos_theta = std::cos(theta);
+			const float sin_theta = std::sin(theta);
+
+			// compute the position
+			vertices_pos[index] = glm::vec3(
+				radius * sin_theta * sin_phi,
+				-radius * cos_phi,
+				radius * cos_theta * sin_phi
+			);
+
+			theta += d_theta;
+			++index;
+		}
+
+		phi += d_phi;
+	}
+
+	// compute the indices
+	index = 0;
+	for (unsigned int c = 0; c < latitude_edge_count; c++) {
+		for (unsigned int r = 0; r < longitude_edge_count; r++) {
+			// the first tri of the quad
+			//indices[index] = glm::vec3(
+			//	r,
+			//	r + (c + 1) * longitude_vertices_nb,
+			//	r + (c + 1) * longitude_vertices_nb + 1
+			//);
+			indices[index] = glm::vec3(
+				longitude_vertices_nb * (c + 0u) + (r + 0u),
+				longitude_vertices_nb * (c + 0u) + (r + 1u),
+				longitude_vertices_nb * (c + 1u) + (r + 1u)
+			);
+			++index;
+
+			// the second tri of the quad
+			//indices[index] = glm::vec3(
+			//	r + (c + 1) * longitude_vertices_nb,
+			//	r + (c + 1) * longitude_vertices_nb + 1,
+			//	r + 1
+			//);
+			indices[index] = glm::vec3(
+				longitude_vertices_nb * (c + 0u) + (r + 0u),
+				longitude_vertices_nb * (c + 1u) + (r + 1u),
+				longitude_vertices_nb * (c + 1u) + (r + 0u)
+			);
+			++index;
+		}
+	}
+
 	bonobo::mesh_data data;
 
 	// generate necessary varibles
 	glGenVertexArrays(1, &data.vao);
-	glGenBuffers(1, &data.bo);
-	glGenBuffers(1, &data.ibo);
-
-	/* bind all the buffers */
-	// 1. bind the vertex array
+	assert(data.vao != 0u);
 	glBindVertexArray(data.vao);
-	// 2. vertices array buffer
-	glBindBuffer(GL_ARRAY_BUFFER, data.bo);
-	// compute the position of the vertices
-	// we start at the top vertex of the sphere
-	for (unsigned int i = 0; i < latitude_vertices_nb; i++) {
 
-	}
+	// the difference between sizeof and .size()
+	std::cout << sizeof(vertices_pos) << std::endl;
+	std::cout << vertices_pos.size() * sizeof(glm::vec3) << std::endl;;
+
+	glGenBuffers(1, &data.bo);
+	assert(data.bo != 0u);
+	glBindBuffer(GL_ARRAY_BUFFER, data.bo);
+	glBufferData(GL_ARRAY_BUFFER, vertices_pos.size() * sizeof(glm::vec3), vertices_pos.data(), GL_STATIC_DRAW);
+	glEnableVertexAttribArray(static_cast<unsigned int>(bonobo::shader_bindings::vertices));
+	glVertexAttribPointer(static_cast<unsigned int>(bonobo::shader_bindings::vertices), 3, GL_FLOAT, GL_FALSE, 0, reinterpret_cast<GLvoid const*>(0x0));
+	glBindBuffer(GL_ARRAY_BUFFER, 0u);
+
+	//data.indices_nb = 2 * (longitude_vertices_nb-1) * (latitude_vertices_nb - 1);
+	data.indices_nb = indices.size() * 3u;
+	glGenBuffers(1, &data.ibo);
+	assert(data.ibo != 0u);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, data.ibo);
+	glBufferData(GL_ELEMENT_ARRAY_BUFFER, static_cast<GLsizeiptr>(indices.size() * sizeof(glm::uvec3)), reinterpret_cast<GLvoid const*>(indices.data()), GL_STATIC_DRAW);
+
+	glBindVertexArray(0u);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0u);
 
 	return data;
 }

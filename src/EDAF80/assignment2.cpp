@@ -141,7 +141,8 @@ edaf80::Assignment2::run()
 	glEnable(GL_DEPTH_TEST);
 
 
-	auto const control_point_sphere = parametric_shapes::createSphere(0.1f, 10u, 10u);
+	auto const control_point_sphere = parametric_shapes::createQuad(0.25f, 0.15f);
+	//auto const control_point_sphere = parametric_shapes::createSphere(0.15f, 10u, 10u);
 	std::array<glm::vec3, 9> control_point_locations = {
 		glm::vec3( 0.0f,  0.0f,  0.0f),
 		glm::vec3( 1.0f,  1.8f,  1.0f),
