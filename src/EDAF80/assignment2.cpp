@@ -45,12 +45,12 @@ edaf80::Assignment2::run()
 	// Load the sphere geometry
 	//auto const shape = parametric_shapes::createCircleRing(2.0f, 0.75f, 40u, 4u);
 	//auto const shape = parametric_shapes::createQuad(0.25f, 0.15f);
-	auto const shape = parametric_shapes::createSphere(.15f, 10u, 10u);
+	auto const shape = parametric_shapes::createSphere(0.5f, 10u, 10u);
 	if (shape.vao == 0u)
 		return;
 
 	// Set up the camera
-	mCamera.mWorld.SetTranslate(glm::vec3(0.0f, 0.0f, .5f));
+	mCamera.mWorld.SetTranslate(glm::vec3(0.0f, 1.0f, 9.0f));
 	mCamera.mMouseSensitivity = glm::vec2(0.003f);
 	mCamera.mMovementSpeed = glm::vec3(3.0f); // 3 m/s => 10.8 km/h
 
@@ -134,6 +134,10 @@ edaf80::Assignment2::run()
 
 
 	//! \todo Create a tesselated sphere and a tesselated torus
+	//auto sphere = Node();
+	//sphere.set_geometry(shape);
+	//sphere.set_program(&fallback_shader, set_uniforms);
+	//TRSTransformf& sphere_transform_ref = sphere.get_transform();
 
 
 	glClearDepthf(1.0f);
@@ -141,8 +145,8 @@ edaf80::Assignment2::run()
 	glEnable(GL_DEPTH_TEST);
 
 
-	auto const control_point_sphere = parametric_shapes::createQuad(0.25f, 0.15f);
-	//auto const control_point_sphere = parametric_shapes::createSphere(0.15f, 10u, 10u);
+	//auto const control_point_sphere = parametric_shapes::createQuad(0.25f, 0.15f);
+	auto const control_point_sphere = parametric_shapes::createSphere(0.15f, 10u, 10u);
 	std::array<glm::vec3, 9> control_point_locations = {
 		glm::vec3( 0.0f,  0.0f,  0.0f),
 		glm::vec3( 1.0f,  1.8f,  1.0f),
@@ -219,9 +223,23 @@ edaf80::Assignment2::run()
 		if (interpolate) {
 			//! \todo Interpolate the movement of a shape between various
 			//!        control points.
+			// set the moving object to the first control point
+			//circle_rings.get_transform().SetTranslate(control_point_locations[0]);
+			float x = elapsed_time_s - std::floor(elapsed_time_s);
+			int index = static_cast<unsigned int>(elapsed_time_s) % (control_point_locations.size() - 1);
+
 			if (use_linear) {
 				//! \todo Compute the interpolated position
 				//!       using the linear interpolation.
+				// 对每两个control point，将其的elapsed time mod 到 0-1
+				// 注意这个函数已经在render loop中了，不用再写循环了
+				const auto interpolated_pos = interpolation::evalLERP(
+					control_point_locations[index],
+					control_point_locations[index+1],
+					x
+				);
+				circle_rings.get_transform().SetTranslate(interpolated_pos);
+
 			}
 			else {
 				//! \todo Compute the interpolated position

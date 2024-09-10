@@ -4,7 +4,7 @@ glm::vec3
 interpolation::evalLERP(glm::vec3 const& p0, glm::vec3 const& p1, float const x)
 {
 	//! \todo Implement this function
-	return glm::vec3();
+	return (1.0f - x) * p0 + x * p1;
 }
 
 glm::vec3
