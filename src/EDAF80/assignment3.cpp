@@ -83,6 +83,18 @@ edaf80::Assignment3::run()
 	if (texcoord_shader == 0u)
 		LogError("Failed to load texcoord shader");
 
+	/* Create a new shader here */
+	GLuint skybox_shader = 0u;
+	program_manager.CreateAndRegisterProgram("Skybox",
+		{ {ShaderType::vertex, "EDAF80/skybox.vert"},
+		  {ShaderType::fragment, "EDAF80/skybox.frag"}},
+		skybox_shader
+		);
+	if (skybox_shader == 0u)
+		LogError("Failed to load skybox shader");
+
+
+	/* Set up the uniform here */
 	auto light_position = glm::vec3(-2.0f, 4.0f, 2.0f);
 	auto const set_uniforms = [&light_position](GLuint program){
 		glUniform3fv(glGetUniformLocation(program, "light_position"), 1, glm::value_ptr(light_position));
@@ -96,6 +108,24 @@ edaf80::Assignment3::run()
 		glUniform3fv(glGetUniformLocation(program, "camera_position"), 1, glm::value_ptr(camera_position));
 	};
 
+	// new uniform for skybox shader
+	const auto skybox_set_uniforms = [&camera_position](GLuint program) {
+		glUniform3fv(glGetUniformLocation(program, "camera_position"), 1, glm::value_ptr(camera_position));
+	};
+
+	/* Set up the texture here, check assignment 1 for reference */
+	// 1. load the cubemap
+	const GLuint cubemap = bonobo::loadTextureCubeMap(
+		config::resources_path("cubemaps/NissiBeach2/posx.jpg"),
+		config::resources_path("cubemaps/NissiBeach2/negx.jpg"),
+		config::resources_path("cubemaps/NissiBeach2/posy.jpg"),
+		config::resources_path("cubemaps/NissiBeach2/negy.jpg"),
+		config::resources_path("cubemaps/NissiBeach2/posz.jpg"),
+		config::resources_path("cubemaps/NissiBeach2/negz.jpg")
+	);
+	// 2. load diffuse texture and bump texture for phong shading
+	const GLuint diffuse = bonobo::loadTexture2D(config::resources_path("textures/leather_red_02_coll1_2k.jpg"));
+	const GLuint specular = bonobo::loadTexture2D(config::resources_path("textures/leather_red_02_rough_2k.jpg"));
 
 	//
 	// Set up the two spheres used.
@@ -106,9 +136,12 @@ edaf80::Assignment3::run()
 		return;
 	}
 
+	/* add the texture to the demo sphere and skybox */
 	Node skybox;
 	skybox.set_geometry(skybox_shape);
-	skybox.set_program(&fallback_shader, set_uniforms);
+	// change the sky box shader here!
+	skybox.set_program(&skybox_shader, skybox_set_uniforms);
+	skybox.add_texture("cubemap", cubemap, GL_TEXTURE_CUBE_MAP);
 
 	auto demo_shape = parametric_shapes::createSphere(1.5f, 40u, 40u);
 	if (demo_shape.vao == 0u) {
@@ -199,7 +232,10 @@ edaf80::Assignment3::run()
 		bonobo::changePolygonMode(polygon_mode);
 
 
+		/* disable depth test to make the skybox always render in the background */
+		glDisable(GL_DEPTH_TEST);
 		skybox.render(mCamera.GetWorldToClipMatrix());
+		glEnable(GL_DEPTH_TEST);
 		demo_sphere.render(mCamera.GetWorldToClipMatrix());
 
 

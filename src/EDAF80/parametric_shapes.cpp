@@ -208,7 +208,7 @@ parametric_shapes::createSphere(float const radius,
 			// binormal
 			vertices_binormal[index] = glm::vec3(
 				sin_theta * cos_phi,
-				1,
+				sin_phi,
 				cos_theta * cos_phi
 			);
 
