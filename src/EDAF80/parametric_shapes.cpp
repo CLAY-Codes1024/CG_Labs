@@ -96,7 +96,7 @@ parametric_shapes::createQuad(float const width, float const height,
 	                      /*! \todo how many components do our vertices have? */3,
 	                      /* what is the type of each component? */GL_FLOAT,
 	                      /* should it automatically normalise the values stored */GL_FALSE,
-	                      /* once all components of a vertex have been read, how far away (in bytes) is the next vertex? */3 * sizeof(float),
+	                      /* once all components of a vertex have been read, how far away (in bytes) is the next vertex? */0,
 	                      /* how far away (in bytes) from the start of the buffer is the first vertex? */reinterpret_cast<GLvoid const*>(0x0));
 
 	// Now, let's allocate a second one for the indices.
@@ -112,7 +112,7 @@ parametric_shapes::createQuad(float const width, float const height,
 	             /* where is the data stored on the CPU? */index_sets.data(),
 	             /* inform OpenGL that the data is modified once, but used often */GL_STATIC_DRAW);
 
-	data.indices_nb = /*! \todo how many indices do we have? */6;
+	data.indices_nb = /*! \todo how many indices do we have? */index_sets.size() * 3u;
 
 	// All the data has been recorded, we can unbind them.
 	glBindVertexArray(0u);

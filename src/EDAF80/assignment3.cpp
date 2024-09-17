@@ -93,6 +93,16 @@ edaf80::Assignment3::run()
 	if (skybox_shader == 0u)
 		LogError("Failed to load skybox shader");
 
+	GLuint phong_shader = 0u;
+	program_manager.CreateAndRegisterProgram("Phong",
+		{ {ShaderType::vertex, "EDAF80/phong.vert"},
+		  {ShaderType::fragment, "EDAF80/phong.frag"}},
+		phong_shader
+		);
+	if (phong_shader == 0u)
+		LogError("Failed to load phong shader");
+
+
 
 	/* Set up the uniform here */
 	auto light_position = glm::vec3(-2.0f, 4.0f, 2.0f);
@@ -102,10 +112,12 @@ edaf80::Assignment3::run()
 
 	bool use_normal_mapping = false;
 	auto camera_position = mCamera.mWorld.GetTranslation();
-	auto const phong_set_uniforms = [&use_normal_mapping,&light_position,&camera_position](GLuint program){
+	auto specular_shininess = 10.0f;
+	auto const phong_set_uniforms = [&use_normal_mapping,&light_position,&camera_position, &specular_shininess](GLuint program){
 		glUniform1i(glGetUniformLocation(program, "use_normal_mapping"), use_normal_mapping ? 1 : 0);
 		glUniform3fv(glGetUniformLocation(program, "light_position"), 1, glm::value_ptr(light_position));
 		glUniform3fv(glGetUniformLocation(program, "camera_position"), 1, glm::value_ptr(camera_position));
+		glUniform1f(glGetUniformLocation(program, "specular_shininess"), specular_shininess);
 	};
 
 	// new uniform for skybox shader
@@ -126,6 +138,7 @@ edaf80::Assignment3::run()
 	// 2. load diffuse texture and bump texture for phong shading
 	const GLuint diffuse = bonobo::loadTexture2D(config::resources_path("textures/leather_red_02_coll1_2k.jpg"));
 	const GLuint specular = bonobo::loadTexture2D(config::resources_path("textures/leather_red_02_rough_2k.jpg"));
+	const GLuint normal = bonobo::loadTexture2D(config::resources_path("textures/leather_red_02_nor_2k.jpg"));
 
 	//
 	// Set up the two spheres used.
@@ -155,10 +168,14 @@ edaf80::Assignment3::run()
 	demo_material.specular = glm::vec3(1.0f, 1.0f, 1.0f);
 	demo_material.shininess = 10.0f;
 
+	/* add necessary texture for phong mapping and normal mapping */
 	Node demo_sphere;
 	demo_sphere.set_geometry(demo_shape);
 	demo_sphere.set_material_constants(demo_material);
 	demo_sphere.set_program(&fallback_shader, phong_set_uniforms);
+	demo_sphere.add_texture("diffuse_texture", diffuse, GL_TEXTURE_2D);
+	demo_sphere.add_texture("specular_texture", specular, GL_TEXTURE_2D);
+	demo_sphere.add_texture("normal_texture", normal, GL_TEXTURE_2D);
 
 
 	glClearDepthf(1.0f);
@@ -268,6 +285,9 @@ edaf80::Assignment3::run()
 			ImGui::Checkbox("Show basis", &show_basis);
 			ImGui::SliderFloat("Basis thickness scale", &basis_thickness_scale, 0.0f, 100.0f);
 			ImGui::SliderFloat("Basis length scale", &basis_length_scale, 0.0f, 100.0f);
+
+			/* add your own varible */
+			ImGui::SliderFloat("Shininess_value", &specular_shininess, 1.0f, 1000.0f);
 		}
 		ImGui::End();
 
