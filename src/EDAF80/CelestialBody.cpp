@@ -38,12 +38,14 @@ glm::mat4 CelestialBody::render(std::chrono::microseconds elapsed_time,
 	const auto spin = glm::rotate(glm::mat4(1.0f), _body.spin.rotation_angle, glm::vec3(.0f, 1.0f, .0f));
 	const auto tilt = glm::rotate(glm::mat4(1.0f), _body.spin.axial_tilt, glm::vec3(.0f, .0f, 1.0f));
 
+	auto const orbit_keep_orientation = glm::rotate(glm::mat4(1.0f), -_body.orbit.rotation_angle, glm::vec3(0.0f, 1.0f, 0.0f));
 	const auto trans = glm::translate(glm::mat4(1.0f), glm::vec3(_body.orbit.radius, 0.0f, 0.0f));
 	const auto orbit_rotate = glm::rotate(glm::mat4(1.0f), _body.orbit.rotation_angle, glm::vec3(.0f, 1.0f, .0f));
-	const auto orbit_tilt = glm::rotate(glm::mat4(1.0f), _body.orbit.inclination, glm::vec3(.0f, 1.0f, .0f));
+	const auto orbit_tilt = glm::rotate(glm::mat4(1.0f), _body.orbit.inclination, glm::vec3(.0f, .0f, 1.0f));
 
-	const auto child_transform = parent_transform * orbit_tilt * orbit_rotate * trans;
-	const auto world = child_transform * tilt * spin * scale;
+	const auto child_transform = parent_transform * orbit_tilt * orbit_rotate * trans * orbit_keep_orientation * tilt;
+	auto world = child_transform * spin * scale;
+
 
 	if (show_basis)
 	{
@@ -57,6 +59,14 @@ glm::mat4 CelestialBody::render(std::chrono::microseconds elapsed_time,
 	// of the node is just the identity matrix and we can forward the whole
 	// world matrix.
 	_body.node.render(view_projection,  world);
+
+	// if the planet has the ring
+	if (_ring.is_set) {
+		const auto ring_scale = glm::scale(glm::mat4(1.0f), glm::vec3(_ring.scale, 1.0f));
+		const auto ring_rotate = glm::rotate(glm::mat4(1.0f), glm::radians(90.0f), glm::vec3(1.0f, 0.0f, 0.0f));
+		world = child_transform * ring_rotate * ring_scale;
+		_ring.node.render(view_projection, world);
+	}
 
 	return child_transform;
 }

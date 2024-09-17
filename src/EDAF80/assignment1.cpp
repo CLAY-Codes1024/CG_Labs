@@ -33,7 +33,7 @@ int main()
 	FPSCameraf camera(0.5f * glm::half_pi<float>(),
 	                  static_cast<float>(config::resolution_x) / static_cast<float>(config::resolution_y),
 	                  0.01f, 1000.0f);
-	camera.mWorld.SetTranslate(glm::vec3(0.0f, 4.0f, 20.0f));
+	camera.mWorld.SetTranslate(glm::vec3(0.0f, 0.0f, 6.0f));
 	camera.mWorld.LookAt(glm::vec3(0.0f));
 	camera.mMouseSensitivity = glm::vec2(0.003f);
 	camera.mMovementSpeed = glm::vec3(3.0f); // 3 m/s => 10.8 km/h
@@ -191,11 +191,14 @@ int main()
 	jupiter.set_spin(jupiter_spin);
 	jupiter.set_orbit(jupiter_orbit);
 
-	// dont forget the saturn_ring
+	// create the ring
+	CelestialBody saturn_ring(saturn_ring_shape, &celestial_ring_shader, saturn_ring_texture);
+
 	CelestialBody saturn(sphere, &celestial_body_shader, saturn_texture);
 	saturn.set_scale(saturn_scale);
 	saturn.set_spin(saturn_spin);
 	saturn.set_orbit(saturn_orbit);
+	saturn.set_ring(saturn_ring_shape, &celestial_ring_shader, saturn_ring_texture, saturn_ring_scale);
 
 	CelestialBody uranus(sphere, &celestial_body_shader, uranus_texture);
 	uranus.set_scale(uranus_scale);
