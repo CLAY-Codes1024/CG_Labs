@@ -173,9 +173,10 @@ edaf80::Assignment3::run()
 	demo_sphere.set_geometry(demo_shape);
 	demo_sphere.set_material_constants(demo_material);
 	demo_sphere.set_program(&fallback_shader, phong_set_uniforms);
-	demo_sphere.add_texture("diffuse_texture", diffuse, GL_TEXTURE_2D);
-	demo_sphere.add_texture("specular_texture", specular, GL_TEXTURE_2D);
-	demo_sphere.add_texture("normal_texture", normal, GL_TEXTURE_2D);
+	demo_sphere.add_texture("diffuse_map", diffuse, GL_TEXTURE_2D);
+	demo_sphere.add_texture("specular_map", specular, GL_TEXTURE_2D);
+	/* add the normal texture as uniform */
+	demo_sphere.add_texture("normal_map", normal, GL_TEXTURE_2D);
 
 
 	glClearDepthf(1.0f);
