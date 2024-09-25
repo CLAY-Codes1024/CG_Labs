@@ -11,5 +11,6 @@ out vec4 FragColor;
 
 void main() {
     vec3 coord = normalize(fs_in.posWS - fs_in.camera_pos);
+    //vec3 coord = normalize(fs_in.posWS);
     FragColor = texture(cubemap, coord);
 }

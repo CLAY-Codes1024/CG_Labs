@@ -8,6 +8,7 @@ layout (location = 4) in vec3 binormal;
 
 uniform mat4 vertex_model_to_world;
 uniform mat4 vertex_world_to_clip;
+uniform mat4 normal_model_to_world;
 
 out VS_OUT {
     vec3 posWS;
@@ -20,7 +21,7 @@ out VS_OUT {
 void main() {
     // pass the data to frag shader
     vs_out.posWS = (vertex_model_to_world * vec4(pos, 1.0f)).xyz;
-    vs_out.normalWS = (vertex_model_to_world * vec4(normal, 1.0f)).xyz;
+    vs_out.normalWS = (normal_model_to_world * vec4(normal, 1.0f)).xyz;
     vs_out.tangentWS = (vertex_model_to_world * vec4(tangent, 1.0f)).xyz;
     vs_out.binormalWS = (vertex_model_to_world * vec4(binormal, 1.0f)).xyz;
     vs_out.texCoord = texCoord;

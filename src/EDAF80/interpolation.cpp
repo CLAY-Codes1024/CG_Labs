@@ -15,7 +15,8 @@ interpolation::evalCatmullRom(glm::vec3 const& p0, glm::vec3 const& p1,
 	//! \todo Implement this function
 	// Bear in mind that matrix in glm is column basic
 	glm::vec3 interpolated_pos = glm::vec4(1, x, x * x, x * x * x) *
-		glm::mat4(0, -t, 2 * t, -t,
+		glm::mat4(
+			0, -t, 2 * t, -t,
 			1, 0, t - 3, 2 - t,
 			0, t, 3 - 2 * t, t - 2,
 			0, 0, -t, t) *
