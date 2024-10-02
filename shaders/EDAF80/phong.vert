@@ -21,7 +21,8 @@ out VS_OUT {
 void main() {
     // pass the data to frag shader
     vs_out.posWS = (vertex_model_to_world * vec4(pos, 1.0f)).xyz;
-    vs_out.normalWS = (normal_model_to_world * vec4(normal, 1.0f)).xyz;
+    //vs_out.normalWS = (normal_model_to_world * vec4(normal, 1.0f)).xyz;
+    vs_out.normalWS = normalize(vec3(normal_model_to_world * vec4(normal, 0.0)));
     vs_out.tangentWS = (vertex_model_to_world * vec4(tangent, 1.0f)).xyz;
     vs_out.binormalWS = (vertex_model_to_world * vec4(binormal, 1.0f)).xyz;
     vs_out.texCoord = texCoord;

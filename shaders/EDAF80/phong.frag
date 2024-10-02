@@ -32,9 +32,14 @@ void main() {
 
     if((use_normal_mapping != 0) && (has_normal_map != 0)) {
         // construct tbn matrix
-        mat3 tbn = mat3(normalize(fs_in.tangentWS), normalize(fs_in.binormalWS), normalize(fs_in.normalWS));
+        //mat3 tbn = mat3(normalize(fs_in.tangentWS), normalize(fs_in.binormalWS), normalize(fs_in.normalWS));
+        mat3 tbn = mat3(fs_in.tangentWS, fs_in.binormalWS, fs_in.normalWS);
+        vec3 tempNorm = texture(normal_map, fs_in.texCoord.xy).xyz * 2.0f - 1.0f;
+        //tempNorm.y = -tempNorm.y;
         // get the normal value from the normal map and map from 0-1 to -1-1
-        normal = tbn * (texture(normal_map, fs_in.texCoord.xy).xyz * 2.0f - 1.0f);
+        //normal = tbn * (texture(normal_map, fs_in.texCoord.xy).xyz * 2.0f - 1.0f);
+        normal = tbn * tempNorm;
+        FragColor = vec4(normal, 1.0f);
     }
 
     // ambient
